@@ -1,0 +1,3 @@
+python-dotenv
+pysqlite3
+discord_webhook
