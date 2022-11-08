@@ -53,6 +53,7 @@ RestartSec=3
 User=discordbots
 Group=discordbots
 SyslogIdentifier=ozbargin
+WorkingDirectory=/home/discordbots/
 ExecStart=/home/discordbots/ozbargain-discord-bot/ozbargin_pyvenv/bin/python /home/discordbots/ozbargain-discord-bot/ozbargin.py
 
 [Install]

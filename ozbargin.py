@@ -90,6 +90,7 @@ def sqlite_db_initialise():
             c.execute(sql_create_deals_table)
         except Error as e:
             tprint(f"Error: Unable to initialise database: {e}")
+            sys.exit(1)
     else:
         tprint("Error: Unable to connet to SQLite DB")
 
@@ -101,6 +102,7 @@ def sqlite_create_connection(SQLITE_DB_FILE):
         conn = sqlite3.connect(SQLITE_DB_FILE)
     except Error as e:
         tprint(f"Error: Unable to connect to the database: {e}")
+        sys.exit(1)
     return conn
 
 
@@ -119,6 +121,7 @@ def sqlite_seen_deal(url):
                 return True
         except Error as e:
             tprint(f"Error: Unable to query database for deal: {e}")
+            sys.exit(1)
 
 
 def sqlite_insert_deal(url):
@@ -136,6 +139,7 @@ def sqlite_insert_deal(url):
             conn.close()
         except Error as e:
             tprint(f"Error: Unable to insert deal into database: {e}")
+            sys.exit(1)
 
 
 def sqlite_purge_old_deals():
@@ -149,6 +153,7 @@ def sqlite_purge_old_deals():
             c.execute(sql_purge_deals)
         except Error as e:
             tprint(f"Error: Unable to purge old deals from the database: {e}")
+            sys.exit(1)
 
 
 def ozbargin_site_check():
