@@ -103,7 +103,7 @@ def sqlite_seen_deal(url):
     """Check if we've already seen this deal in the SQLite DB"""
     conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
     if conn is not None:
-        sql_check_deal = f"SELECT * FROM deals WHERE url=?"
+        sql_check_deal = f"SELECT * FROM deals WHERE url = (?);"
         try:
             c = conn.cursor()
             c.execute(sql_check_deal, (url,))
@@ -123,7 +123,7 @@ def sqlite_insert_deal(url):
         try:
             c = conn.cursor()
             c.execute(
-                "INSERT INTO deals (url, timestamp) VALUES (?,?)", sql_insert_data
+                "INSERT INTO deals (url, timestamp) VALUES (?,?);", sql_insert_data
             )
             conn.commit()
             conn.close()
@@ -135,7 +135,7 @@ def sqlite_purge_old_deals():
     """Purge deals older than 60 days from the database"""
     conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
     if conn is not None:
-        sql_purge_deals = "DELETE FROM deals WHERE timestamp < strftime('%s', date('now', '-60 days'))"
+        sql_purge_deals = "DELETE FROM deals WHERE timestamp < strftime('%s', date('now', '-60 days'));"
         try:
             c = conn.cursor()
             c.execute(sql_purge_deals)
@@ -146,6 +146,7 @@ def sqlite_purge_old_deals():
 def ozbargin_site_check():
     """Check the ozbargain site for new deals"""
     rss_url = os.getenv("OZBARGIN_RSS_FEED")
+    initial_run = True
 
     # Endless loop.
     while True:
@@ -154,41 +155,50 @@ def ozbargin_site_check():
 
         # Get the RSS feed.
         tprint("Fetching RSS feed...")
-        rss_request = requests.get(rss_url, timeout=10)
-        if rss_request.status_code == 200:
-            rss_feed = rss_request.text
+        try:
+            rss_request = requests.get(rss_url, timeout=10)
+        except Error as e:
+            tprint(f"Error: Unable to fetch RSS feed: {e}")
+        finally:
+            if rss_request.status_code == 200:
+                rss_feed = rss_request.text
+                # Find all the deals in the RSS feed, read line by line.
+                for line in rss_feed.splitlines():
+                    # Only print line if string is matched: <description><![CDATA[
+                    if re.search(r"<description><!\[CDATA\[", line):
+                        node_id = re.search(r'href="/node/(.*?)"', line).group(1)
+                        deal_url = f"https://www.ozbargain.com.au/node/{node_id}"
+                        deal_details = re.search(r'alt="(.*?)"', line).group(1)
 
-            # Find all the deals in the RSS feed, read line by line.
-            for line in rss_feed.splitlines():
-                # Only print line if string is matched: <description><![CDATA[
-                if re.search(r"<description><!\[CDATA\[", line):
-                    node_id = re.search(r'href="/node/(.*?)"', line).group(1)
-                    deal_url = f"https://www.ozbargain.com.au/node/{node_id}"
-                    deal_details = re.search(r'alt="(.*?)"', line).group(1)
+                        # Check if we've seen the deal or not.
+                        if sqlite_seen_deal(deal_url):
+                            continue
+                        else:
+                            tprint(f"New deal found: {deal_url}")
 
-                    # Check if we've seen the deal or not.
-                    if sqlite_seen_deal(deal_url):
-                        continue
-                    else:
-                        tprint(f"New deal found: {deal_url}")
+                            if initial_run == True:
+                                tprint(
+                                    f"Initial run, skipping Discord webhook for deal: {deal_url}"
+                                )
+                            else:
+                                # Send the deal to Discord via webhook.
+                                # Sleep for 60 seconds if the webhook fails (then try again).
+                                while discord_notify(deal_url, deal_details) == False:
+                                    time.sleep(60)
 
-                        # Send a notification to Discord. If it fails to send..
-                        # we will try again in 60 seconds (avoid rate limits).
-                        while discord_notify(deal_url, deal_details) == False:
-                            time.sleep(60)
+                            # Update the SQLite DB with the new deal.
+                            sqlite_insert_deal(deal_url)
+                            time.sleep(1)
 
-                        # Update the SQLite DB with the new deal.
-                        sqlite_insert_deal(deal_url)
-                        time.sleep(10)
-
-            # Sleep for 5 minutes before checking again.
-            tprint("Sleeping for 5 minutes...")
-            time.sleep(300)
-        else:
-            tprint(
-                f"Error: Unable to get RSS feed: {rss_request.status_code}, sleeping for 5 minutes..."
-            )
-            time.sleep(300)
+                # Sleep for 5 minutes before checking again.
+                initial_run = False
+                tprint("Sleeping for 5 minutes...")
+                time.sleep(300)
+            else:
+                tprint(
+                    f"Error: Unable to get RSS feed: {rss_request.status_code}, sleeping for 5 minutes..."
+                )
+                time.sleep(300)
 
 
 def check_envs():
