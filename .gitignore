@@ -1,3 +1,4 @@
+ozbargin_pyvenv/
 *.pyc
 *.db
 *.sqlite
