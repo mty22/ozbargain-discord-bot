@@ -17,9 +17,10 @@ import random
 import sqlite3
 from sqlite3 import Error
 from discord_webhook import DiscordWebhook, DiscordEmbed
+from bs4 import BeautifulSoup
 
 
-def discord_notify(url, text):
+def discord_notify(url, text, img):
     """Send a notification to Discord"""
     unix_timestamp = int(datetime.datetime.now().timestamp())
     webhook = DiscordWebhook(url=os.getenv("DISCORD_WEBHOOK"))
@@ -53,6 +54,7 @@ def discord_notify(url, text):
     embed.add_embed_field(
         name="Seen", value=f"<t:{unix_timestamp}:F> (<t:{unix_timestamp}:R>)"
     )
+    embed.set_image(url=img)
 
     webhook.add_embed(embed)
     response = webhook.execute()
@@ -183,6 +185,15 @@ def ozbargin_site_check():
                         deal_url = f"https://www.ozbargain.com.au/node/{node_id}"
                         deal_details = re.search(r'alt="(.*?)"', line).group(1)
 
+                        # Curl deal url to get thumbnail
+                        r = requests.get(deal_url)
+                        soup = BeautifulSoup(r.content, "html.parser")
+                        img = "https://files.delvu.com/defaults/default.jpg?v=1"
+                        for item in soup.select('div.foxshot-container'):
+                            # Get first img in this div
+                            img = (item.select_one("img"))['src']
+                            break
+
                         # Check if we've seen the deal or not.
                         if sqlite_seen_deal(deal_url):
                             continue
@@ -196,7 +207,7 @@ def ozbargin_site_check():
                             else:
                                 # Send the deal to Discord via webhook.
                                 # Sleep for 60 seconds if the webhook fails (then try again).
-                                while discord_notify(deal_url, deal_details) == False:
+                                while discord_notify(deal_url, deal_details, img) == False:
                                     time.sleep(60)
 
                             # Update the SQLite DB with the new deal.
