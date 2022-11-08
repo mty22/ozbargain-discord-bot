@@ -42,7 +42,9 @@ def discord_notify(url, text):
         0xFFB6C1,
         0x00CED1,
     ]
-    embed = DiscordEmbed(title=f"{url}", description=text, color=random.choice(colors))
+    embed = DiscordEmbed(
+        title=f"{url}", description=f"{url}\n{text}", color=random.choice(colors)
+    )
     embed.set_author(
         name="",
         url=url,
