@@ -135,9 +135,7 @@ def sqlite_purge_old_deals():
     """Purge deals older than 60 days from the database"""
     conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
     if conn is not None:
-        sql_purge_deals = (
-            """ DELETE FROM deals WHERE timestamp < date('now','-60 days'); """
-        )
+        sql_purge_deals = "DELETE FROM deals WHERE timestamp < strftime('%s', date('now', '-60 days'))"
         try:
             c = conn.cursor()
             c.execute(sql_purge_deals)
