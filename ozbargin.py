@@ -74,6 +74,7 @@ def sqlite_db_initialise():
     # Check if the SQLite DB file exists.
     sqlite_file = os.path.join(os.path.dirname(__file__), os.getenv("SQLITE_DB_FILE"))
 
+    print(f"SQLite DB file: {sqlite_file}")
     if os.path.exists(sqlite_file):
         return
 
