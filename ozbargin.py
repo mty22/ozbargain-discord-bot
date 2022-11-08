@@ -70,10 +70,12 @@ def tprint(text):
 def sqlite_db_initialise():
     """If the SQLite DB doesn't exist, create it"""
     # Check if the SQLite DB file exists.
-    if os.path.exists(os.getenv("SQLITE_DB_FILE")):
+    sqlite_file = os.path.join(os.path.dirname(__file__), os.getenv("SQLITE_DB_FILE"))
+
+    if os.path.exists(sqlite_file):
         return
 
-    conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
+    conn = sqlite_create_connection(sqlite_file)
     if conn is not None:
         sql_create_deals_table = """ CREATE TABLE IF NOT EXISTS deals (
                                         id integer PRIMARY KEY,
@@ -101,7 +103,8 @@ def sqlite_create_connection(SQLITE_DB_FILE):
 
 def sqlite_seen_deal(url):
     """Check if we've already seen this deal in the SQLite DB"""
-    conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
+    sqlite_file = os.path.join(os.path.dirname(__file__), os.getenv("SQLITE_DB_FILE"))
+    conn = sqlite_create_connection(sqlite_file)
     if conn is not None:
         sql_check_deal = f"SELECT * FROM deals WHERE url = (?);"
         try:
@@ -117,7 +120,8 @@ def sqlite_seen_deal(url):
 
 def sqlite_insert_deal(url):
     """Update the SQLite DB once we've seen the deal"""
-    conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
+    sqlite_file = os.path.join(os.path.dirname(__file__), os.getenv("SQLITE_DB_FILE"))
+    conn = sqlite_create_connection(sqlite_file)
     if conn is not None:
         sql_insert_data = (url, int(datetime.datetime.now().timestamp()))
         try:
@@ -133,7 +137,8 @@ def sqlite_insert_deal(url):
 
 def sqlite_purge_old_deals():
     """Purge deals older than 30 days from the database"""
-    conn = sqlite_create_connection(os.getenv("SQLITE_DB_FILE"))
+    sqlite_file = os.path.join(os.path.dirname(__file__), os.getenv("SQLITE_DB_FILE"))
+    conn = sqlite_create_connection(sqlite_file)
     if conn is not None:
         sql_purge_deals = "DELETE FROM deals WHERE timestamp < strftime('%s', date('now', '-30 days'));"
         try:
