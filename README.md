@@ -17,3 +17,44 @@ To launch:
 ```
 ./ozbargin.py
 ```
+
+--
+
+Quick mockup for Ubuntu:
+
+
+```
+adduser discordbots
+cd /home/discordbots/
+git clone git@github.com:mty22/ozbargain-discord-bot.git
+cp .env.example .env
+```
+
+Update .env file with discord webhook!
+
+```
+python3.10 -m venv ozbargin_pyvenv
+source ozbargin_pyvenv/bin/activate
+pip3.10 install --upgrade pip
+pip3.10 install -r requirements.txt
+```
+
+as root:
+```
+echo '[Unit]
+Description=ozbargin
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=3
+User=discordbots
+Group=discordbots
+ExecStart=/home/discordbots/ozbargain-discord-bot/ozbargin_pyvenv/bin/python /home/discordbots/ozbargain-discord-bot/ozbargin.py
+
+[Install]
+WantedBy=multi-user.target' > /etc/systemd/system/ozbargin.service
+systemctl enable ozbargin --now
+```
