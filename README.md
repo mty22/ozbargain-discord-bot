@@ -52,9 +52,12 @@ Restart=always
 RestartSec=3
 User=discordbots
 Group=discordbots
+SyslogIdentifier=ozbargin
 ExecStart=/home/discordbots/ozbargain-discord-bot/ozbargin_pyvenv/bin/python /home/discordbots/ozbargain-discord-bot/ozbargin.py
 
 [Install]
 WantedBy=multi-user.target' > /etc/systemd/system/ozbargin.service
+
+systemctl daemon-reload
 systemctl enable ozbargin --now
 ```
